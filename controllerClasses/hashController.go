@@ -74,21 +74,20 @@ func SetHashedValue(w http.ResponseWriter, r *http.Request)  {
 		http.Error(w, "Invalid request body.  Syntax should be password=xxxxx", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("got here " + password)
-
 	newBody := DTOs.HashedPasswordObject{RawPassword:password, CreatedTime:time.Now()}
 	newKey := addToStaticList(newBody)
-	fmt.Println(newKey)
 	go HashPassword(newKey, &hashedValuesMap)
-	fmt.Println("return")
 	fmt.Fprintf(w, strconv.Itoa(newKey))
 }
 
-//TODO: maybe synchronize this
+
 func addToStaticList(newBody DTOs.HashedPasswordObject) int {
+	//trying to add synchronization for multiple concurrent request
+	var syncLock sync.Mutex
+	syncLock.Lock()
 	currentMax = currentMax + 1
 	hashedValuesMap.Store(currentMax, newBody)
+	syncLock.Unlock()
 	return currentMax
 }
 
@@ -135,18 +134,18 @@ func getMapValue(keyNumber int, w http.ResponseWriter) DTOs.HashedPasswordObject
 //status functions
 func ReadStats(w http.ResponseWriter, r *http.Request)  {
 	stats := DTOs.Stats{}
-	stats.Total = currentMax
-
 	totalRuntime := time.Duration(0)
+	threadsCompleted := 0
 	for i := 1; i <= currentMax; i++ {
 		returnObject := getMapValue(i, w)
 		//simpliest way I could find to check for non 0 time
 		if (returnObject.HashedTime.Year() > 0001) {
+			threadsCompleted = threadsCompleted + 1
 			totalRuntime = totalRuntime + (returnObject.HashedTime.Sub(returnObject.CreatedTime))
 		}
 	}
-	avgRuntime := totalRuntime/time.Duration(stats.Total)
-	stats.Average = avgRuntime/1000
+	stats.Total = threadsCompleted
+	stats.Average = (totalRuntime/time.Duration(stats.Total))/1000 //converting to microseconds, per requirements
 	statsJson, _ := json.Marshal(stats)
 	fmt.Fprintf(w, string(statsJson))
 }
