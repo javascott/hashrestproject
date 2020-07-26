@@ -20,7 +20,7 @@ import (
 var hashedValuesMap sync.Map
 var currentMax int = 0
 var serverRunning bool = true
-const hashThreadSleepTime = 15
+const hashThreadSleepTime = 5
 //This seems to always be 3 after all threads finish... I couldn't find more in the runtime library
 var InitialGoThreads = 3
 
@@ -57,7 +57,7 @@ func SetHashedValue(w http.ResponseWriter, r *http.Request)  {
 		return
 	}
 
-	const passwordPrefix = "password="
+	const passwordPrefix = "password"
 
 	//checking POST Body
 	//TODO: ask if I need to check case sensativity
@@ -75,9 +75,13 @@ func SetHashedValue(w http.ResponseWriter, r *http.Request)  {
 		return
 	}
 
+	fmt.Println("got here " + password)
+
 	newBody := DTOs.HashedPasswordObject{RawPassword:password, CreatedTime:time.Now()}
 	newKey := addToStaticList(newBody)
-	go HashPassword(newKey, &hashedValuesMap) //&newBody)
+	fmt.Println(newKey)
+	go HashPassword(newKey, &hashedValuesMap)
+	fmt.Println("return")
 	fmt.Fprintf(w, strconv.Itoa(newKey))
 }
 
