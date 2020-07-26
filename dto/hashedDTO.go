@@ -15,6 +15,11 @@ type HashedPasswordObject struct {
 	HashedTime time.Time
 }
 
+type Stats struct {
+	Total int
+	Average time.Duration
+}
+
 func HashPassword(newKey int, hashedValuesMap *sync.Map) { //passwordObject *HashedPasswordObject) {
 	time.Sleep(5 * time.Second)
 	mapObject, statusOk := hashedValuesMap.Load(newKey)
