@@ -29,10 +29,10 @@ func getHashedValue(w http.ResponseWriter, r *http.Request)  {
 	if (statusOk) {
 		storedObject, ok := returnObject.(HashedDTO.HashedPasswordObject)
 		if (!ok) {
-
+			fmt.Println("Unable to cast object when retrieving from Map")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		returnJSON = storedObject.HashedPassword
-		fmt.Println(storedObject.RawPassword)
 		if returnJSON == "" {
 			returnJSON = "Value not set yet, please wait 5 seconds"
 		}
@@ -48,8 +48,7 @@ func setHashedValue(w http.ResponseWriter, r *http.Request)  {
 		return
 	}
 
-	//maybe make this a constant?
-	passwordPrefix := "password="
+	const passwordPrefix = "password="
 
 	//checking POST Body
 	//TODO: ask if I need to check case sensativity
@@ -69,7 +68,7 @@ func setHashedValue(w http.ResponseWriter, r *http.Request)  {
 
 	newBody := HashedDTO.HashedPasswordObject{RawPassword:password, CreatedTime:time.Now()}
 	newKey := addToStaticList(newBody)
-	HashedDTO.HashPassword(&newBody)
+	go HashedDTO.HashPassword(newKey, &hashedValuesMap) //&newBody)
 	fmt.Fprintf(w, strconv.Itoa(newKey))
 }
 
